@@ -29,12 +29,10 @@ public class UsuarioService {
         this.jwtService = jwtService;
     }
 
-    // Listar todos os usuários
     public List<Usuario> listarUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    // Criar usuário
     public Usuario criarUsuario(Usuario usuario) {
 
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
@@ -43,7 +41,17 @@ public class UsuarioService {
             );
         }
 
-        // Criptografa a senha antes de salvar
+        if (usuario.getDocumento() != null
+                && !usuario.getDocumento().isBlank()
+                && usuarioRepository.existsByDocumento(
+                usuario.getDocumento()
+        )) {
+
+            throw new RuntimeException(
+                    "Este CPF/CNPJ já está cadastrado"
+            );
+        }
+
         usuario.setSenha(
                 passwordEncoder.encode(usuario.getSenha())
         );
@@ -51,12 +59,14 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
-    // Buscar usuário por ID
     public Optional<Usuario> buscarPorId(String id) {
         return usuarioRepository.findById(id);
     }
 
-    // Atualizar usuário
+    public Optional<Usuario> buscarPorEmail(String email) {
+        return usuarioRepository.findByEmail(email);
+    }
+
     public Usuario atualizarUsuario(
             String id,
             Usuario usuarioAtualizado
@@ -76,7 +86,6 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
-    // Deletar usuário
     public void deletarUsuario(String id) {
 
         if (!usuarioRepository.existsById(id)) {
@@ -88,38 +97,63 @@ public class UsuarioService {
         usuarioRepository.deleteById(id);
     }
 
-    // Login
     public LoginResponse login(LoginRequest loginRequest) {
 
-        Usuario usuario = usuarioRepository
-                .findByEmail(loginRequest.getEmail())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Email ou senha inválidos"
-                        )
-                );
+        String identificador =
+                loginRequest.getIdentificador();
 
-        // Verifica se a senha informada corresponde
-        // à senha criptografada no banco
-        boolean senhaCorreta = passwordEncoder.matches(
-                loginRequest.getSenha(),
-                usuario.getSenha()
-        );
+        Usuario usuario;
 
-        if (!senhaCorreta) {
+        if (identificador == null
+                || identificador.isBlank()) {
+
             throw new RuntimeException(
-                    "Email ou senha inválidos"
+                    "Email ou CPF/CNPJ é obrigatório"
             );
         }
 
-        // Converte o usuário para resposta
+        if (identificador.contains("@")) {
+
+            usuario = usuarioRepository
+                    .findByEmail(identificador)
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Email ou senha inválidos"
+                            )
+                    );
+
+        } else {
+
+            usuario = usuarioRepository
+                    .findByDocumento(identificador)
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "CPF/CNPJ ou senha inválidos"
+                            )
+                    );
+        }
+
+        boolean senhaCorreta =
+                passwordEncoder.matches(
+                        loginRequest.getSenha(),
+                        usuario.getSenha()
+                );
+
+        if (!senhaCorreta) {
+
+            throw new RuntimeException(
+                    "Email/CPF/CNPJ ou senha inválidos"
+            );
+        }
+
         UsuarioResponse usuarioResponse =
                 converterParaResponse(usuario);
 
-        // Gera o token JWT
-        String token = jwtService.gerarToken(
-                usuario.getEmail()
-        );
+        String token =
+                jwtService.gerarToken(
+                        usuario.getEmail(),
+                        usuario.getTipo()
+                );
 
         return new LoginResponse(
                 usuarioResponse,
@@ -127,7 +161,6 @@ public class UsuarioService {
         );
     }
 
-    // Converter Usuario para UsuarioResponse
     private UsuarioResponse converterParaResponse(
             Usuario usuario
     ) {
@@ -136,7 +169,8 @@ public class UsuarioService {
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getTelefone()
+                usuario.getTelefone(),
+                usuario.getTipo()
         );
     }
 }

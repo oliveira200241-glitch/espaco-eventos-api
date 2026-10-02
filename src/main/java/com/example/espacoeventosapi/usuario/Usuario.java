@@ -17,6 +17,10 @@ public class Usuario {
 
     private String telefone;
 
+    private String documento;
+
+    private String tipo;
+
     // Construtor vazio
     public Usuario() {
     }
@@ -60,5 +64,23 @@ public class Usuario {
 
     public void setTelefone(String telefone) {
         this.telefone = telefone;
+    }
+
+    // Getter e Setter do Documento
+    public String getDocumento() {
+        return documento;
+    }
+
+    public void setDocumento(String documento) {
+        this.documento = documento;
+    }
+
+    // Getter e Setter do Tipo
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 }

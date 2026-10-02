@@ -2,15 +2,16 @@ package com.example.espacoeventosapi.dto;
 
 public class LoginRequest {
 
-    private String email;
+    private String identificador;
+
     private String senha;
 
-    public String getEmail() {
-        return email;
+    public String getIdentificador() {
+        return identificador;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
     }
 
     public String getSenha() {

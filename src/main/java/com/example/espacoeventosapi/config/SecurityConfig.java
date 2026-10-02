@@ -37,6 +37,9 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    // ==========================================
+    // PASSWORD ENCODER
+    // ==========================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -45,6 +48,9 @@ public class SecurityConfig {
 
     }
 
+    // ==========================================
+    // CONFIGURAÇÃO DO SPRING SECURITY
+    // ==========================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -53,77 +59,98 @@ public class SecurityConfig {
 
         http
 
-                // Libera comunicação entre Frontend e Backend
+                // ==========================================
+                // CORS
+                // ==========================================
+
                 .cors(Customizer.withDefaults())
 
-                // Desativa CSRF
+                // ==========================================
+                // CSRF
+                // ==========================================
+
                 .csrf(csrf -> csrf.disable())
 
+                // ==========================================
+                // SESSÃO
+                // ==========================================
 
-                // API não utiliza sessão
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
+                // ==========================================
+                // AUTORIZAÇÃO DAS ROTAS
+                // ==========================================
 
-                // Configuração das rotas
                 .authorizeHttpRequests(auth -> auth
 
+                        // ----------------------------------
+                        // LOGIN
+                        // ----------------------------------
 
-                        // Login
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/usuarios/login"
                         ).permitAll()
 
+                        // ----------------------------------
+                        // CADASTRO DE USUÁRIO
+                        // ----------------------------------
 
-                        // Cadastro
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/usuarios",
                                 "/usuarios/"
                         ).permitAll()
 
+                        // ----------------------------------
+                        // TODAS AS OUTRAS ROTAS
+                        // PRECISAM DE JWT
+                        // ----------------------------------
 
-                        // Outras rotas precisam de token
                         .anyRequest().authenticated()
                 )
 
+                // ==========================================
+                // ERRO DE AUTENTICAÇÃO
+                // ==========================================
 
-                // Erro de autenticação
                 .exceptionHandling(exception ->
-
                         exception.authenticationEntryPoint(
-                                (request, response, authException) ->
+                                (request, response, authException) -> {
 
-                                        response.sendError(
-                                                HttpServletResponse.SC_UNAUTHORIZED
-                                        )
+                                    response.sendError(
+                                            HttpServletResponse.SC_UNAUTHORIZED
+                                    );
+
+                                }
                         )
                 )
 
+                // ==========================================
+                // FILTRO JWT
+                // ==========================================
 
-                // Filtro JWT
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-
         return http.build();
-
     }
 
-
+    // ==========================================
     // CONFIGURAÇÃO DO CORS
+    // ==========================================
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration =
                 new CorsConfiguration();
-
 
         configuration.setAllowedOrigins(
                 List.of(
@@ -131,7 +158,6 @@ public class SecurityConfig {
                         "http://localhost:5500"
                 )
         );
-
 
         configuration.setAllowedMethods(
                 List.of(
@@ -143,24 +169,18 @@ public class SecurityConfig {
                 )
         );
 
-
         configuration.setAllowedHeaders(
                 List.of("*")
         );
 
-
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
-
 
         source.registerCorsConfiguration(
                 "/**",
                 configuration
         );
 
-
         return source;
-
     }
-
 }
