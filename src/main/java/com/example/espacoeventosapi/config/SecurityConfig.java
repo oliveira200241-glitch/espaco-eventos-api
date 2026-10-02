@@ -88,6 +88,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // ----------------------------------
+                        // CORS / PREFLIGHT
+                        // ----------------------------------
+
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        ).permitAll()
+
+                        // ----------------------------------
                         // LOGIN
                         // ----------------------------------
 
@@ -97,7 +106,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // ----------------------------------
-                        // CADASTRO DE USUÁRIO
+                        // CADASTRO
                         // ----------------------------------
 
                         .requestMatchers(
@@ -105,11 +114,6 @@ public class SecurityConfig {
                                 "/usuarios",
                                 "/usuarios/"
                         ).permitAll()
-
-                        // ----------------------------------
-                        // TODAS AS OUTRAS ROTAS
-                        // PRECISAM DE JWT
-                        // ----------------------------------
 
                         .anyRequest().authenticated()
                 )
