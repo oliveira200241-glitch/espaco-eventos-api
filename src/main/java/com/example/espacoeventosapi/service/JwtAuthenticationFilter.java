@@ -25,6 +25,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
+    // ==========================================
+    // ROTAS QUE NÃO PRECISAM DE JWT
+    // ==========================================
+
+    @Override
+    protected boolean shouldNotFilter(
+            HttpServletRequest request
+    ) {
+
+        String path = request.getServletPath();
+
+        return path.equals("/usuarios/login")
+                || path.equals("/usuarios")
+                || path.equals("/usuarios/");
+    }
+
+    // ==========================================
+    // FILTRO JWT
+    // ==========================================
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -32,18 +52,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getServletPath();
-
-        if (path.equals("/usuarios/login")
-                || path.equals("/usuarios")
-                || path.equals("/usuarios/")) {
-
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         String authorizationHeader =
                 request.getHeader("Authorization");
+
+        // ------------------------------------------
+        // SEM TOKEN
+        // ------------------------------------------
 
         if (authorizationHeader == null
                 || !authorizationHeader.startsWith("Bearer ")) {
@@ -52,9 +66,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authorizationHeader.substring(7);
+        // ------------------------------------------
+        // EXTRAI TOKEN
+        // ------------------------------------------
+
+        String token =
+                authorizationHeader.substring(7);
 
         try {
+
+            // ------------------------------------------
+            // VALIDA TOKEN
+            // ------------------------------------------
 
             if (!jwtService.tokenValido(token)) {
 
@@ -64,16 +87,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            // ------------------------------------------
+            // EXTRAI DADOS DO TOKEN
+            // ------------------------------------------
+
             String email =
                     jwtService.extrairEmail(token);
 
             String tipo =
                     jwtService.extrairTipo(token);
 
+            // ------------------------------------------
+            // DEFINE ROLE
+            // ------------------------------------------
+
             SimpleGrantedAuthority autoridade =
                     new SimpleGrantedAuthority(
                             "ROLE_" + tipo
                     );
+
+            // ------------------------------------------
+            // CRIA AUTENTICAÇÃO
+            // ------------------------------------------
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -89,6 +124,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .buildDetails(request)
             );
 
+            // ------------------------------------------
+            // SALVA NO SECURITY CONTEXT
+            // ------------------------------------------
+
             SecurityContextHolder
                     .getContext()
                     .setAuthentication(authentication);
@@ -97,6 +136,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
         }
+
+        // ------------------------------------------
+        // CONTINUA REQUISIÇÃO
+        // ------------------------------------------
 
         filterChain.doFilter(request, response);
     }

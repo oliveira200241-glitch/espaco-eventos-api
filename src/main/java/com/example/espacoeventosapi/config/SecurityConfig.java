@@ -1,6 +1,7 @@
 package com.example.espacoeventosapi.config;
 
 import com.example.espacoeventosapi.service.JwtAuthenticationFilter;
+
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
@@ -45,11 +46,10 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
 
         return new BCryptPasswordEncoder();
-
     }
 
     // ==========================================
-    // CONFIGURAÇÃO DO SPRING SECURITY
+    // SECURITY
     // ==========================================
 
     @Bean
@@ -72,6 +72,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 // ==========================================
+                // DESATIVAR AUTENTICAÇÃO PADRÃO
+                // ==========================================
+
+                .httpBasic(httpBasic -> httpBasic.disable())
+
+                .formLogin(formLogin -> formLogin.disable())
+
+                .logout(logout -> logout.disable())
+
+                // ==========================================
                 // SESSÃO
                 // ==========================================
 
@@ -82,13 +92,13 @@ public class SecurityConfig {
                 )
 
                 // ==========================================
-                // AUTORIZAÇÃO DAS ROTAS
+                // AUTORIZAÇÃO
                 // ==========================================
 
                 .authorizeHttpRequests(auth -> auth
 
                         // ----------------------------------
-                        // CORS / PREFLIGHT
+                        // PREFLIGHT CORS
                         // ----------------------------------
 
                         .requestMatchers(
@@ -115,11 +125,15 @@ public class SecurityConfig {
                                 "/usuarios/"
                         ).permitAll()
 
+                        // ----------------------------------
+                        // TODAS AS OUTRAS ROTAS
+                        // ----------------------------------
+
                         .anyRequest().authenticated()
                 )
 
                 // ==========================================
-                // ERRO DE AUTENTICAÇÃO
+                // RESPOSTA PARA NÃO AUTENTICADO
                 // ==========================================
 
                 .exceptionHandling(exception ->
@@ -129,13 +143,12 @@ public class SecurityConfig {
                                     response.sendError(
                                             HttpServletResponse.SC_UNAUTHORIZED
                                     );
-
                                 }
                         )
                 )
 
                 // ==========================================
-                // FILTRO JWT
+                // JWT FILTER
                 // ==========================================
 
                 .addFilterBefore(
@@ -147,7 +160,7 @@ public class SecurityConfig {
     }
 
     // ==========================================
-    // CONFIGURAÇÃO DO CORS
+    // CORS
     // ==========================================
 
     @Bean
@@ -177,6 +190,8 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(
                 List.of("*")
         );
+
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
