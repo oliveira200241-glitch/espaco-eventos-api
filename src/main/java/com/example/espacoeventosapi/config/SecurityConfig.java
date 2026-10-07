@@ -56,25 +56,35 @@ public class SecurityConfig {
         );
 
         http
+                // ==========================================
                 // CORS
+                // ==========================================
                 .cors(Customizer.withDefaults())
 
-                // CSRF não é necessário para API REST com JWT
+                // ==========================================
+                // CSRF
+                // ==========================================
                 .csrf(csrf -> csrf.disable())
 
-                // Desativa autenticações automáticas do Spring
+                // ==========================================
+                // DESATIVA AUTENTICAÇÕES AUTOMÁTICAS
+                // ==========================================
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
                 .logout(logout -> logout.disable())
 
-                // API sem sessão
+                // ==========================================
+                // API SEM SESSÃO
+                // ==========================================
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                // Regras de acesso
+                // ==========================================
+                // REGRAS DE ACESSO
+                // ==========================================
                 .authorizeHttpRequests(auth -> auth
 
                         // Preflight CORS
@@ -83,24 +93,23 @@ public class SecurityConfig {
                                 "/**"
                         ).permitAll()
 
-                        // Login público
+                        // ==================================
+                        // DIAGNÓSTICO:
+                        // TODAS AS ROTAS DE USUÁRIOS PÚBLICAS
+                        // ==================================
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/usuarios/login"
+                                "/usuarios/**"
                         ).permitAll()
 
-                        // Cadastro público
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/usuarios",
-                                "/usuarios/"
-                        ).permitAll()
-
-                        // Todo o restante exige JWT
+                        // ==================================
+                        // TODO O RESTANTE PRECISA DE JWT
+                        // ==================================
                         .anyRequest().authenticated()
                 )
 
-                // Retorna 401 quando não autenticado
+                // ==========================================
+                // TRATAMENTO DE 401
+                // ==========================================
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(
                                 (request, response, authException) -> {
@@ -126,7 +135,9 @@ public class SecurityConfig {
                         )
                 )
 
-                // JWT antes do filtro padrão de usuário/senha
+                // ==========================================
+                // JWT
+                // ==========================================
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
