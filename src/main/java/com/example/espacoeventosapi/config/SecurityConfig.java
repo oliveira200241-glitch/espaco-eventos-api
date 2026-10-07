@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.Customizer;
@@ -42,107 +41,83 @@ public class SecurityConfig {
         );
     }
 
-    // ==========================================
-    // PASSWORD ENCODER
-    // ==========================================
-
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
-
-    // ==========================================
-    // SECURITY
-    // ==========================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
+        System.out.println(
+                "========== SECURITY FILTER CHAIN CRIADA =========="
+        );
+
         http
-
-                // ==========================================
                 // CORS
-                // ==========================================
-
                 .cors(Customizer.withDefaults())
 
-                // ==========================================
-                // CSRF
-                // ==========================================
-
+                // CSRF não é necessário para API REST com JWT
                 .csrf(csrf -> csrf.disable())
 
-                // ==========================================
-                // DESATIVAR AUTENTICAÇÃO PADRÃO
-                // ==========================================
-
+                // Desativa autenticações automáticas do Spring
                 .httpBasic(httpBasic -> httpBasic.disable())
-
                 .formLogin(formLogin -> formLogin.disable())
-
                 .logout(logout -> logout.disable())
 
-                // ==========================================
-                // SESSÃO
-                // ==========================================
-
+                // API sem sessão
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
-                // ==========================================
-                // AUTORIZAÇÃO
-                // ==========================================
-
+                // Regras de acesso
                 .authorizeHttpRequests(auth -> auth
 
-                        // ----------------------------------
-                        // PREFLIGHT CORS
-                        // ----------------------------------
-
+                        // Preflight CORS
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         ).permitAll()
 
-                        // ----------------------------------
-                        // LOGIN
-                        // ----------------------------------
-
+                        // Login público
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/usuarios/login"
                         ).permitAll()
 
-                        // ----------------------------------
-                        // CADASTRO
-                        // ----------------------------------
-
+                        // Cadastro público
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/usuarios",
                                 "/usuarios/"
                         ).permitAll()
 
-                        // ----------------------------------
-                        // TODAS AS OUTRAS ROTAS
-                        // ----------------------------------
-
+                        // Todo o restante exige JWT
                         .anyRequest().authenticated()
                 )
 
-                // ==========================================
-                // RESPOSTA PARA NÃO AUTENTICADO
-                // ==========================================
-
+                // Retorna 401 quando não autenticado
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(
                                 (request, response, authException) -> {
+
+                                    System.out.println(
+                                            "========== 401 SECURITY =========="
+                                    );
+
+                                    System.out.println(
+                                            "MÉTODO: "
+                                                    + request.getMethod()
+                                    );
+
+                                    System.out.println(
+                                            "URL: "
+                                                    + request.getRequestURI()
+                                    );
 
                                     response.sendError(
                                             HttpServletResponse.SC_UNAUTHORIZED
@@ -151,21 +126,22 @@ public class SecurityConfig {
                         )
                 )
 
-                // ==========================================
-                // JWT FILTER
-                // ==========================================
-
+                // JWT antes do filtro padrão de usuário/senha
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-        return http.build();
-    }
+        SecurityFilterChain chain = http.build();
 
-    // ==========================================
-    // CORS
-    // ==========================================
+        System.out.println(
+                "========== SECURITY FILTER CHAIN PRONTA =========="
+        );
+
+        System.out.println(chain);
+
+        return chain;
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
