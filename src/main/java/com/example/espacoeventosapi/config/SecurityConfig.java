@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpMethod;
 
 import org.springframework.security.config.Customizer;
@@ -35,47 +36,55 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-
-        System.out.println(
-                "========== SECURITY CONFIG CARREGADO =========="
-        );
     }
+
+    // ==========================================
+    // PASSWORD ENCODER
+    // ==========================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
+
+    // ==========================================
+    // SECURITY
+    // ==========================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http
     ) throws Exception {
 
-        System.out.println(
-                "========== SECURITY FILTER CHAIN CRIADA =========="
-        );
-
         http
+
                 // ==========================================
                 // CORS
                 // ==========================================
+
                 .cors(Customizer.withDefaults())
 
                 // ==========================================
                 // CSRF
                 // ==========================================
+
                 .csrf(csrf -> csrf.disable())
 
                 // ==========================================
-                // DESATIVA AUTENTICAÇÕES AUTOMÁTICAS
+                // DESATIVAR AUTENTICAÇÃO PADRÃO
                 // ==========================================
+
                 .httpBasic(httpBasic -> httpBasic.disable())
+
                 .formLogin(formLogin -> formLogin.disable())
+
                 .logout(logout -> logout.disable())
 
                 // ==========================================
-                // API SEM SESSÃO
+                // SESSÃO
                 // ==========================================
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
@@ -83,50 +92,53 @@ public class SecurityConfig {
                 )
 
                 // ==========================================
-                // REGRAS DE ACESSO
+                // AUTORIZAÇÃO
                 // ==========================================
+
                 .authorizeHttpRequests(auth -> auth
 
-                        // Preflight CORS
+                        // ----------------------------------
+                        // PREFLIGHT CORS
+                        // ----------------------------------
+
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
                         ).permitAll()
 
-                        // ==================================
-                        // DIAGNÓSTICO:
-                        // TODAS AS ROTAS DE USUÁRIOS PÚBLICAS
-                        // ==================================
+                        // ----------------------------------
+                        // LOGIN
+                        // ----------------------------------
+
                         .requestMatchers(
-                                "/usuarios/**"
+                                HttpMethod.POST,
+                                "/usuarios/login"
                         ).permitAll()
 
-                        // ==================================
-                        // TODO O RESTANTE PRECISA DE JWT
-                        // ==================================
+                        // ----------------------------------
+                        // CADASTRO
+                        // ----------------------------------
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/usuarios",
+                                "/usuarios/"
+                        ).permitAll()
+
+                        // ----------------------------------
+                        // TODAS AS OUTRAS ROTAS
+                        // ----------------------------------
+
                         .anyRequest().authenticated()
                 )
 
                 // ==========================================
-                // TRATAMENTO DE 401
+                // RESPOSTA PARA NÃO AUTENTICADO
                 // ==========================================
+
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(
                                 (request, response, authException) -> {
-
-                                    System.out.println(
-                                            "========== 401 SECURITY =========="
-                                    );
-
-                                    System.out.println(
-                                            "MÉTODO: "
-                                                    + request.getMethod()
-                                    );
-
-                                    System.out.println(
-                                            "URL: "
-                                                    + request.getRequestURI()
-                                    );
 
                                     response.sendError(
                                             HttpServletResponse.SC_UNAUTHORIZED
@@ -136,23 +148,20 @@ public class SecurityConfig {
                 )
 
                 // ==========================================
-                // JWT
+                // JWT FILTER
                 // ==========================================
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-        SecurityFilterChain chain = http.build();
-
-        System.out.println(
-                "========== SECURITY FILTER CHAIN PRONTA =========="
-        );
-
-        System.out.println(chain);
-
-        return chain;
+        return http.build();
     }
+
+    // ==========================================
+    // CORS
+    // ==========================================
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
